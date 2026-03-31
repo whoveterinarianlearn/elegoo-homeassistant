@@ -26,6 +26,10 @@ from .const import (
     CONF_EXTERNAL_IP,
     CONF_GCODE_PROXY_URL,
     CONF_PROXY_ENABLED,
+    CONF_SCAN_INTERVAL_ACTIVE,
+    CONF_SCAN_INTERVAL_IDLE,
+    DEFAULT_SCAN_INTERVAL_ACTIVE,
+    DEFAULT_SCAN_INTERVAL_IDLE,
     DOMAIN,
     LOGGER,
 )
@@ -1109,6 +1113,13 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
             else:
                 printer_data.pop(CONF_GCODE_PROXY_URL, None)
 
+            printer_data[CONF_SCAN_INTERVAL_ACTIVE] = int(
+                user_input.get(CONF_SCAN_INTERVAL_ACTIVE, DEFAULT_SCAN_INTERVAL_ACTIVE)
+            )
+            printer_data[CONF_SCAN_INTERVAL_IDLE] = int(
+                user_input.get(CONF_SCAN_INTERVAL_IDLE, DEFAULT_SCAN_INTERVAL_IDLE)
+            )
+
             return self.async_create_entry(
                 title=printer.name,
                 data=printer_data,
@@ -1135,11 +1146,25 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(CONF_GCODE_PROXY_URL, default=""): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
             ),
+            vol.Required(CONF_SCAN_INTERVAL_ACTIVE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
+            vol.Required(CONF_SCAN_INTERVAL_IDLE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
         }
 
     @staticmethod
     def _cc2_options_suggested(settings: dict) -> dict:
-        suggested = dict(settings)
+        suggested = {
+            CONF_SCAN_INTERVAL_ACTIVE: DEFAULT_SCAN_INTERVAL_ACTIVE,
+            CONF_SCAN_INTERVAL_IDLE: DEFAULT_SCAN_INTERVAL_IDLE,
+            **settings,
+        }
         proxy_url = (suggested.get(CONF_GCODE_PROXY_URL) or "").strip()
         if proxy_url:
             normalized = _normalize_gcode_proxy_base_url(proxy_url)
@@ -1163,22 +1188,45 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
 
         if user_input is not None:
             printer.ip_address = user_input.get(CONF_IP_ADDRESS, printer.ip_address)
+            printer_data = printer.to_dict()
+            printer_data[CONF_SCAN_INTERVAL_ACTIVE] = int(
+                user_input.get(CONF_SCAN_INTERVAL_ACTIVE, DEFAULT_SCAN_INTERVAL_ACTIVE)
+            )
+            printer_data[CONF_SCAN_INTERVAL_IDLE] = int(
+                user_input.get(CONF_SCAN_INTERVAL_IDLE, DEFAULT_SCAN_INTERVAL_IDLE)
+            )
             return self.async_create_entry(
                 title=printer.name,
-                data=printer.to_dict(),
+                data=printer_data,
             )
 
         data_schema = {
             vol.Required(CONF_IP_ADDRESS): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
             ),
+            vol.Required(CONF_SCAN_INTERVAL_ACTIVE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
+            vol.Required(CONF_SCAN_INTERVAL_IDLE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
+        }
+
+        suggested_values = {
+            CONF_SCAN_INTERVAL_ACTIVE: DEFAULT_SCAN_INTERVAL_ACTIVE,
+            CONF_SCAN_INTERVAL_IDLE: DEFAULT_SCAN_INTERVAL_IDLE,
+            **current_settings,
         }
 
         return self.async_show_form(
             step_id="mqtt_options",
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema(data_schema),
-                suggested_values=current_settings,
+                suggested_values=suggested_values,
             ),
             errors=_errors,
         )
@@ -1208,9 +1256,16 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
                 tested_printer.proxy_enabled = user_input[CONF_PROXY_ENABLED]
                 tested_printer.external_ip = user_input.get(CONF_EXTERNAL_IP)
                 LOGGER.debug("Tested printer: %s", tested_printer.to_dict_safe())
+                printer_dict = tested_printer.to_dict()
+                printer_dict[CONF_SCAN_INTERVAL_ACTIVE] = int(
+                    user_input.get(CONF_SCAN_INTERVAL_ACTIVE, DEFAULT_SCAN_INTERVAL_ACTIVE)
+                )
+                printer_dict[CONF_SCAN_INTERVAL_IDLE] = int(
+                    user_input.get(CONF_SCAN_INTERVAL_IDLE, DEFAULT_SCAN_INTERVAL_IDLE)
+                )
                 return self.async_create_entry(
                     title=tested_printer.name,
-                    data=tested_printer.to_dict(),
+                    data=printer_dict,
                 )
             except ElegooConfigFlowConnectionError as exception:
                 LOGGER.error("Connection error: %s", exception)
@@ -1235,13 +1290,29 @@ class ElegooOptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(CONF_EXTERNAL_IP): selector.TextSelector(
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT),
             ),
+            vol.Required(CONF_SCAN_INTERVAL_ACTIVE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
+            vol.Required(CONF_SCAN_INTERVAL_IDLE): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=1, max=3600, mode=selector.NumberSelectorMode.BOX
+                ),
+            ),
+        }
+
+        suggested_values = {
+            CONF_SCAN_INTERVAL_ACTIVE: DEFAULT_SCAN_INTERVAL_ACTIVE,
+            CONF_SCAN_INTERVAL_IDLE: DEFAULT_SCAN_INTERVAL_IDLE,
+            **current_settings,
         }
 
         return self.async_show_form(
             step_id="websocket_options",
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema(data_schema),
-                suggested_values=current_settings,
+                suggested_values=suggested_values,
             ),
             errors=_errors,
         )

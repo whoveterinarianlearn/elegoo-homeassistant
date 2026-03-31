@@ -9,19 +9,32 @@ import httpx
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from custom_components.elegoo_printer.cc2.client import ElegooCC2Client
-from custom_components.elegoo_printer.const import LOGGER
+from custom_components.elegoo_printer.const import (
+    CONF_SCAN_INTERVAL_ACTIVE,
+    CONF_SCAN_INTERVAL_IDLE,
+    DEFAULT_SCAN_INTERVAL_ACTIVE,
+    DEFAULT_SCAN_INTERVAL_IDLE,
+    LOGGER,
+)
 from custom_components.elegoo_printer.sdcp.exceptions import (
     ElegooPrinterConnectionError,
     ElegooPrinterNotConnectedError,
     ElegooPrinterTimeoutError,
 )
-from custom_components.elegoo_printer.sdcp.models.enums import TransportType
+from custom_components.elegoo_printer.sdcp.models.enums import (
+    ElegooMachineStatus,
+    TransportType,
+)
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from .data import ElegooPrinterConfigEntry
 
+
+_IDLE_STATUSES: frozenset = frozenset(
+    {ElegooMachineStatus.IDLE, ElegooMachineStatus.STOPPED, None}
+)
 
 # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 class ElegooDataUpdateCoordinator(DataUpdateCoordinator):
@@ -37,11 +50,18 @@ class ElegooDataUpdateCoordinator(DataUpdateCoordinator):
         self._firmware_check_interval = timedelta(hours=12)  # Check every 12 hours
         self._last_canvas_check: datetime | None = None
         self._canvas_check_interval = timedelta(seconds=30)  # Check every 30 seconds
+        settings = {**entry.data, **entry.options}
+        self._scan_interval_active = timedelta(
+            seconds=int(settings.get(CONF_SCAN_INTERVAL_ACTIVE, DEFAULT_SCAN_INTERVAL_ACTIVE))
+        )
+        self._scan_interval_idle = timedelta(
+            seconds=int(settings.get(CONF_SCAN_INTERVAL_IDLE, DEFAULT_SCAN_INTERVAL_IDLE))
+        )
         super().__init__(
             hass,
             LOGGER,
             name=f"{entry.title}",
-            update_interval=timedelta(seconds=2),
+            update_interval=self._scan_interval_active,
         )
 
     async def _async_update_data(self) -> Any:
@@ -102,8 +122,16 @@ class ElegooDataUpdateCoordinator(DataUpdateCoordinator):
             self._replay_cc2_print_status_transitions()
 
             self.online = True
-            if self.update_interval != timedelta(seconds=2):
-                self.update_interval = timedelta(seconds=2)
+            current_status = (
+                self.data.status.current_status if self.data and self.data.status else None
+            )
+            desired_interval = (
+                self._scan_interval_idle
+                if current_status in _IDLE_STATUSES
+                else self._scan_interval_active
+            )
+            if self.update_interval != desired_interval:
+                self.update_interval = desired_interval
             return self.data  # noqa: TRY300
         except (
             ElegooPrinterConnectionError,

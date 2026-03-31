@@ -19,17 +19,27 @@
         "data": {
           "ip_address": "Printer IP Address",
           "cc2_access_code": "Access Code (optional)",
-          "gcode_proxy_url": "GCode proxy URL (optional)"
+          "gcode_proxy_url": "GCode proxy URL (optional)",
+          "scan_interval_active": "Active polling interval (seconds)",
+          "scan_interval_idle": "Idle polling interval (seconds)"
         },
         "data_description": {
-          "gcode_proxy_url": "Base URL of the cc2-gcode-capture-proxy (host, host:port, or http(s) URL; http is used if you omit the scheme). Leave blank to disable."
+          "gcode_proxy_url": "Base URL of the cc2-gcode-capture-proxy (host, host:port, or http(s) URL; http is used if you omit the scheme). Leave blank to disable.",
+          "scan_interval_active": "How often to poll the printer while it is printing or active. Default: 2 seconds.",
+          "scan_interval_idle": "How often to poll the printer when idle or stopped. Reduces network traffic. Default: 30 seconds."
         }
       },
       "mqtt_options": {
         "title": "MQTT Printer Options",
         "description": "Configure your MQTT printer settings.",
         "data": {
-          "ip_address": "Printer IP Address"
+          "ip_address": "Printer IP Address",
+          "scan_interval_active": "Active polling interval (seconds)",
+          "scan_interval_idle": "Idle polling interval (seconds)"
+        },
+        "data_description": {
+          "scan_interval_active": "How often to poll the printer while it is printing or active. Default: 2 seconds.",
+          "scan_interval_idle": "How often to poll the printer when idle or stopped. Reduces network traffic. Default: 30 seconds."
         }
       },
       "websocket_options": {
@@ -38,10 +48,14 @@
         "data": {
           "ip_address": "Printer IP Address",
           "proxy_enabled": "Enable the proxy server",
-          "external_ip": "External Address (optional, for advanced network setups)"
+          "external_ip": "External Address (optional, for advanced network setups)",
+          "scan_interval_active": "Active polling interval (seconds)",
+          "scan_interval_idle": "Idle polling interval (seconds)"
         },
         "data_description": {
-          "external_ip": "Override auto-detected address with an IP address or hostname. Leave blank for automatic detection. Use for Kubernetes/Docker setups or when behind a reverse proxy. Ports 3030 and 3031 will be appended automatically."
+          "external_ip": "Override auto-detected address with an IP address or hostname. Leave blank for automatic detection. Use for Kubernetes/Docker setups or when behind a reverse proxy. Ports 3030 and 3031 will be appended automatically.",
+          "scan_interval_active": "How often to poll the printer while it is printing or active. Default: 2 seconds.",
+          "scan_interval_idle": "How often to poll the printer when idle or stopped. Reduces network traffic over Tailscale or similar. Default: 30 seconds."
         }
       }
     }

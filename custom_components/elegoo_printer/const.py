@@ -52,6 +52,12 @@ MIGRATE_V4_ERROR = (
 )
 SETUP_ERROR = "Failed to connect to the printer"
 
+# Adaptive polling intervals
+CONF_SCAN_INTERVAL_ACTIVE = "scan_interval_active"
+CONF_SCAN_INTERVAL_IDLE = "scan_interval_idle"
+DEFAULT_SCAN_INTERVAL_ACTIVE = 2   # seconds – while printing / active
+DEFAULT_SCAN_INTERVAL_IDLE = 30    # seconds – while idle / stopped
+
 # Migration versions
 CONFIG_VERSION_1 = 1
 CONFIG_VERSION_2 = 2
